@@ -58,7 +58,9 @@ export class StreamController {
       }
 
       // Fire and forget — SSE stream carries progress
-      this.streamService.executeRun(threadId, runId, messages);
+      void this.streamService.executeRun(threadId, runId, messages).catch(
+        (err) => this.logger.error(`[run ${runId}] unhandled error: ${err}`),
+      );
 
       return { type: "success", id: dto.id, result: { run_id: runId } };
     }

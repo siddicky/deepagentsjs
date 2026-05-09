@@ -15,8 +15,8 @@ services:
 
   subagent:
     build:
-      context: .
-      dockerfile: Dockerfile.subagent
+      context: ../..
+      dockerfile: examples/async-subagent-server-nestjs/Dockerfile.subagent
     ports:
       - "2024:2024"
     environment:
@@ -30,8 +30,8 @@ services:
 
   supervisor:
     build:
-      context: .
-      dockerfile: Dockerfile.supervisor
+      context: ../..
+      dockerfile: examples/async-subagent-server-nestjs/Dockerfile.supervisor
     ports:
       - "3000:3000"
     environment:

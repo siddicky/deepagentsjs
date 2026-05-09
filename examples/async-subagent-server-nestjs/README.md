@@ -154,7 +154,8 @@ data: [DONE]
 
 ```bash
 # 1. Create a supervisor thread
-THREAD=$(curl -s -X POST http://localhost:3000/threads | jq -r .thread_id)
+THREAD=$(curl -s -X POST http://localhost:3000/threads \
+  -H "Content-Type: application/json" -d '{}' | jq -r .thread_id)
 echo "Thread: $THREAD"
 
 # 2. Open SSE stream (in a separate terminal)

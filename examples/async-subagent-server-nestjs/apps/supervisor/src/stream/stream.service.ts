@@ -27,7 +27,6 @@ export class StreamService {
       const stream = this.agentService.streamEvents(messages, threadId);
 
       let step = 0;
-      const assembledChunks: string[] = [];
 
       for await (const event of stream) {
         if (event.event === "on_chat_model_stream") {
@@ -38,47 +37,33 @@ export class StreamService {
               : chunk?.content?.[0]?.text ?? "";
 
           if (text) {
-            assembledChunks.push(text);
             this.eventBus.emit(
               threadId,
               messagesEvent(
-                [
-                  {
-                    type: "AIMessageChunk",
-                    content: text,
-                    id: event.run_id ?? runId,
-                  },
-                ],
-                step,
+                [{ type: "AIMessageChunk", content: text, id: event.run_id ?? runId }],
+                step++,
               ),
             );
           }
         } else if (event.event === "on_chain_end" && event.name === "LangGraph") {
-          // Final state
           const output = event.data?.output;
-          if (output?.messages) {
-            const msgs: { role: string; content: string }[] =
-              output.messages.map((m: { _getType?: () => string; content: unknown }) => ({
-                role: m._getType?.() === "human" ? "user" : "assistant",
-                content:
-                  typeof m.content === "string"
-                    ? m.content
-                    : JSON.stringify(m.content),
-              }));
+          if (output?.messages?.length) {
+            // Only persist the last assistant message — user message was already
+            // stored by the command handler; prior history is in MemorySaver.
+            const last = output.messages[output.messages.length - 1];
+            const content =
+              typeof last.content === "string"
+                ? last.content
+                : JSON.stringify(last.content);
+            const assistantMsg = { role: "assistant", content };
 
             this.eventBus.emit(
               threadId,
-              valuesEvent({ messages: msgs }, ++step),
+              valuesEvent({ messages: [assistantMsg] }, step++),
             );
-
-            // Persist final messages to thread
-            for (const msg of msgs) {
-              await this.threadsService.appendMessage(threadId, msg);
-            }
+            await this.threadsService.appendMessage(threadId, assistantMsg);
           }
         }
-
-        step++;
       }
 
       this.eventBus.emit(threadId, lifecycleEvent("run_completed", runId));
@@ -92,32 +77,20 @@ export class StreamService {
 }
 
 function lifecycleEvent(type: string, runId: string): ProtocolEvent {
-  return {
-    method: "lifecycle",
-    params: { data: { type, run_id: runId } },
-  };
+  return { method: "lifecycle", params: { data: { type, run_id: runId } } };
 }
 
 function messagesEvent(
   messages: { type: string; content: string; id: string }[],
   step: number,
 ): ProtocolEvent {
-  return {
-    method: "messages",
-    params: { data: messages, step },
-  };
+  return { method: "messages", params: { data: messages, step } };
 }
 
 function valuesEvent(values: unknown, step: number): ProtocolEvent {
-  return {
-    method: "values",
-    params: { data: values, step },
-  };
+  return { method: "values", params: { data: values, step } };
 }
 
 function errorEvent(message: string): ProtocolEvent {
-  return {
-    method: "error",
-    params: { data: { message } },
-  };
+  return { method: "error", params: { data: { message } } };
 }

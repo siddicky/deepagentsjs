@@ -1,11 +1,8 @@
 import "reflect-metadata";
-import { config } from "dotenv";
 import { resolve } from "path";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
+import { config } from "dotenv";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-config({ path: resolve(__dirname, "../../../.env") });
+config({ path: resolve(process.cwd(), ".env") });
 
 import { NestFactory } from "@nestjs/core";
 import { Logger } from "@nestjs/common";
@@ -14,7 +11,6 @@ import { AppModule } from "./app.module";
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: ["log", "warn", "error"],
-    // Disable body-size limit interference with SSE
     bodyParser: true,
   });
 
@@ -33,7 +29,7 @@ async function bootstrap() {
     `Researcher URL: ${process.env.RESEARCHER_URL ?? "http://localhost:2024"}`,
   );
   logger.log(
-    "Vue SDK: useStream({ apiUrl: 'http://localhost:" + port + "', assistantId: 'supervisor' })",
+    `Vue SDK: useStream({ apiUrl: 'http://localhost:${port}', assistantId: 'supervisor' })`,
   );
 }
 

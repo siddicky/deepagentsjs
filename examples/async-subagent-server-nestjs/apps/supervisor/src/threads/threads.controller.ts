@@ -7,8 +7,8 @@ export class ThreadsController {
   constructor(private readonly threadsService: ThreadsService) {}
 
   @Post()
-  create(@Body() dto: CreateThreadDto) {
-    return this.threadsService.createThread(dto.metadata);
+  create(@Body() dto?: CreateThreadDto) {
+    return this.threadsService.createThread(dto?.metadata);
   }
 
   @Get(":threadId")

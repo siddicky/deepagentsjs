@@ -1,12 +1,8 @@
 import "reflect-metadata";
-import { config } from "dotenv";
 import { resolve } from "path";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
+import { config } from "dotenv";
 
-// Load .env from the package directory
-const __dirname = dirname(fileURLToPath(import.meta.url));
-config({ path: resolve(__dirname, "../../../.env") });
+config({ path: resolve(process.cwd(), ".env") });
 
 import { NestFactory } from "@nestjs/core";
 import { Logger } from "@nestjs/common";

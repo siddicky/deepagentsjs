@@ -54,7 +54,9 @@ export class RunsService {
     const run = rows[0];
 
     // Fire and forget — client polls GET /threads/:threadId/runs/:runId
-    this.executeRun(run.run_id, threadId, userMessage);
+    void this.executeRun(run.run_id, threadId, userMessage).catch((err) =>
+      this.logger.error(`[run ${run.run_id}] unhandled error: ${err}`),
+    );
 
     return run;
   }
@@ -82,11 +84,11 @@ export class RunsService {
     threadId: string,
     input: string,
   ): Promise<void> {
-    await this.db.query(
-      "UPDATE runs SET status = 'running' WHERE run_id = $1",
-      [runId],
-    );
     try {
+      await this.db.query(
+        "UPDATE runs SET status = 'running' WHERE run_id = $1",
+        [runId],
+      );
       const agent = this.agentService.getAgent();
       const result = await agent.invoke({
         messages: [new HumanMessage(input)],
