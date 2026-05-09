@@ -34,7 +34,11 @@ Vue Frontend
 └────────────────┬────────────────────┘
                  │
                  ▼
-           PostgreSQL (agentdb)
+    ┌──────────────────────────────┐
+    │     PostgreSQL (agentdb)     │
+    │  threads, runs               │  ← subagent
+    │  supervisor_threads          │  ← supervisor
+    └──────────────────────────────┘
 ```
 
 ## Prerequisites

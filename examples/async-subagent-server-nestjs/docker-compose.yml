@@ -36,7 +36,11 @@ services:
       - "3000:3000"
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      DATABASE_URL: postgres://postgres:postgres@db:5432/agentdb
       RESEARCHER_URL: http://subagent:2024
       PORT_SUPERVISOR: 3000
     depends_on:
-      - subagent
+      db:
+        condition: service_healthy
+      subagent:
+        condition: service_started

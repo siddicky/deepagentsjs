@@ -73,7 +73,7 @@ export class StreamService {
 
             // Persist final messages to thread
             for (const msg of msgs) {
-              this.threadsService.appendMessage(threadId, msg);
+              await this.threadsService.appendMessage(threadId, msg);
             }
           }
         }

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
+import { DatabaseService, SupervisorThreadRow } from "../database/database.service";
 import { v4 as uuidv4 } from "uuid";
 
 export interface SupervisorThread {
@@ -10,44 +11,62 @@ export interface SupervisorThread {
   };
 }
 
+function rowToThread(row: SupervisorThreadRow): SupervisorThread {
+  return {
+    thread_id: row.thread_id,
+    created_at: row.created_at,
+    metadata: row.metadata,
+    values: { messages: row.messages },
+  };
+}
+
 @Injectable()
 export class ThreadsService {
-  private readonly threads = new Map<string, SupervisorThread>();
+  constructor(private readonly db: DatabaseService) {}
 
-  createThread(metadata: Record<string, unknown> = {}): SupervisorThread {
-    const thread: SupervisorThread = {
-      thread_id: uuidv4(),
-      created_at: new Date().toISOString(),
-      metadata,
-      values: { messages: [] },
-    };
-    this.threads.set(thread.thread_id, thread);
-    return thread;
+  async createThread(
+    metadata: Record<string, unknown> = {},
+  ): Promise<SupervisorThread> {
+    const { rows } = await this.db.query<SupervisorThreadRow>(
+      `INSERT INTO supervisor_threads (thread_id, metadata)
+       VALUES ($1, $2)
+       RETURNING thread_id, created_at, metadata, messages`,
+      [uuidv4(), JSON.stringify(metadata)],
+    );
+    return rowToThread(rows[0]);
   }
 
-  getThread(threadId: string): SupervisorThread {
-    const thread = this.threads.get(threadId);
-    if (!thread) throw new NotFoundException("Thread not found");
-    return thread;
+  async getThread(threadId: string): Promise<SupervisorThread> {
+    const row = await this.db.getThread(threadId);
+    if (!row) throw new NotFoundException("Thread not found");
+    return rowToThread(row);
   }
 
-  appendMessage(
+  async appendMessage(
     threadId: string,
     message: { role: string; content: string },
-  ): void {
-    const thread = this.threads.get(threadId);
-    if (thread) thread.values.messages.push(message);
+  ): Promise<void> {
+    await this.db.query(
+      `UPDATE supervisor_threads
+          SET messages = messages || $1::jsonb
+        WHERE thread_id = $2`,
+      [JSON.stringify([message]), threadId],
+    );
   }
 
-  getState(threadId: string) {
-    const thread = this.getThread(threadId);
+  async getState(threadId: string) {
+    const thread = await this.getThread(threadId);
     return {
       values: thread.values,
       checkpoint: null,
     };
   }
 
-  exists(threadId: string): boolean {
-    return this.threads.has(threadId);
+  async exists(threadId: string): Promise<boolean> {
+    const { rows } = await this.db.query<{ exists: boolean }>(
+      "SELECT EXISTS(SELECT 1 FROM supervisor_threads WHERE thread_id = $1) AS exists",
+      [threadId],
+    );
+    return rows[0].exists;
   }
 }

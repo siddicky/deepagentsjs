@@ -38,7 +38,7 @@ export class StreamController {
     @Param("threadId") threadId: string,
     @Body() dto: CommandDto,
   ) {
-    if (!this.threadsService.exists(threadId)) {
+    if (!(await this.threadsService.exists(threadId))) {
       throw new NotFoundException("Thread not found");
     }
 
@@ -53,7 +53,7 @@ export class StreamController {
       // Store incoming user messages
       for (const msg of messages) {
         if (msg.role === "user") {
-          this.threadsService.appendMessage(threadId, msg);
+          await this.threadsService.appendMessage(threadId, msg);
         }
       }
 
@@ -79,13 +79,13 @@ export class StreamController {
    * of LangGraph v2 protocol events until the run completes.
    */
   @Post(":threadId/stream")
-  subscribe(
+  async subscribe(
     @Param("threadId") threadId: string,
     @Body() _dto: SubscribeDto,
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    if (!this.threadsService.exists(threadId)) {
+    if (!(await this.threadsService.exists(threadId))) {
       res.status(404).json({ error: "Thread not found" });
       return;
     }
