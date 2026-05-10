@@ -180,6 +180,18 @@ curl -X POST http://localhost:3000/threads/$THREAD/commands \
 curl http://localhost:2024/ok
 ```
 
+## Development runtime
+
+Use `pnpm dev:subagent` and `pnpm dev:supervisor` to run the two services
+individually, or `pnpm run --parallel dev:subagent dev:supervisor` to run
+both services through `ts-node --transpile-only`. NestJS relies on
+`Reflect` decorator metadata for constructor-based DI, which `tsx`/esbuild
+does not emit; `ts-node` honours `emitDecoratorMetadata: true` from
+`tsconfig.json` and resolves dependencies correctly.
+
+For production, run `pnpm build` and use the `start:*` scripts to launch
+plain `node` against the compiled output in `dist/`.
+
 ## Swapping the agent
 
 To use a different researcher agent, edit `apps/subagent/src/agent/agent.service.ts`.
